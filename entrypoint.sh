@@ -31,6 +31,10 @@ chown dev:dev /home/dev
   printf 'export DEVBOX_PROJECT=%q\n'  "${DEVBOX_PROJECT:-}"
   printf 'export DEVBOX_DEV_CMD=%q\n'  "${DEVBOX_DEV_CMD:-}"
   printf 'export DEVBOX_DEV_PORT=%q\n' "${DEVBOX_DEV_PORT:-3000}"
+  # The box's public dev URL (Coolify magic vars), so dev servers can trust/use
+  # their own public origin (CORS, auth trusted-origins, absolute URLs, ...).
+  printf 'export DEVBOX_URL=%q\n'      "${SERVICE_URL_DEVBOX:-}"
+  printf 'export DEVBOX_FQDN=%q\n'     "${SERVICE_FQDN_DEVBOX:-}"
 } > /etc/profile.d/00-devbox-env.sh
 
 # Public dev-server preview: Caddy fronts container port 9009 -> the dev port.

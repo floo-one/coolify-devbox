@@ -93,6 +93,10 @@ which you re-auth `claude`/`gh` and re-clone).
 | `DEVBOX_PROJECT` | optional | Repo path the `dev`/`claude` tabs `cd` into, e.g. `/home/dev/my-app` (relative = under `/home/dev`). |
 | `DEVBOX_DEV_CMD` | optional | Command the `dev` tab auto-runs on a cold start, e.g. `pnpm dev`. |
 
+Every SSH shell also gets read-only `DEVBOX_URL` / `DEVBOX_FQDN` (the box's public dev URL) —
+use them in your project for CORS / auth trusted-origins / absolute URLs, e.g.
+`trustedOrigins: [...(process.env.DEVBOX_URL ? [process.env.DEVBOX_URL] : [])]`.
+
 `SERVICE_FQDN_DEVBOX_9009` is declared in the compose so Coolify auto-generates the dev URL —
 you don't set the env var by hand. Gotcha (Coolify 4.1.x, git-based compose apps): the generated
 domain isn't always registered with the proxy. If the URL doesn't route after the first deploy,
