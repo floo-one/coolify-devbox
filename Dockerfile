@@ -28,7 +28,8 @@ RUN sed -i \
     /etc/ssh/sshd_config
 
 COPY tmux.conf /etc/tmux.conf
+COPY workstation /usr/local/bin/workstation
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh /usr/local/bin/workstation
 EXPOSE 22
 ENTRYPOINT ["/entrypoint.sh"]

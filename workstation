@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# workstation — (re)create the standard tmux layout for this devbox. Safe to re-run.
+# Normally you never need this: tmux keeps your windows across reconnects. Run it
+# only on a cold start (e.g. after a rare server rebuild) to lay the desks back out.
+set -euo pipefail
+
+S=main
+
+# Create the session if it doesn't exist yet.
+tmux has-session -t "$S" 2>/dev/null || tmux new-session -d -s "$S" -n edit
+
+# Ensure the three standard windows exist (add any that are missing).
+for w in edit claude dev; do
+  tmux list-windows -t "$S" -F '#W' | grep -qx "$w" || tmux new-window -t "$S" -n "$w"
+done
+
+tmux select-window -t "$S:edit"
+
+echo "workstation ready — session '$S' with windows: edit / claude / dev"
+echo "open it with the iTerm 'devbox-personal' profile, or: tmux -CC attach -t $S"
+echo "tip: cd into your project in a window, run 'claude' in the claude window,"
+echo "     and your dev server (e.g. HOST=0.0.0.0 pnpm dev:web) in the dev window."
