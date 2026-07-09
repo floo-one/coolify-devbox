@@ -1,0 +1,18 @@
+services:
+  devbox:
+    build: .
+    ports:
+      - "2222:22"
+    environment:
+      - AUTHORIZED_KEYS=${AUTHORIZED_KEYS}
+    volumes:
+      - devhome:/home/dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "sshd"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  devhome:
