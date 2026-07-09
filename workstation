@@ -18,16 +18,25 @@ set -euo pipefail
 
 S=main
 PROJECT="${DEVBOX_PROJECT:-}"
+# A relative value ("my-app") means a directory under $HOME.
+[ -n "$PROJECT" ] && [ "${PROJECT#/}" = "$PROJECT" ] && PROJECT="$HOME/$PROJECT"
 
 if tmux has-session -t "$S" 2>/dev/null; then
   echo "session '$S' already exists — leaving it untouched (tmux persists across reconnects)."
-  echo "to rebuild this standard layout from scratch:  tmux kill-session -t $S && workstation"
+  echo "changed DEVBOX_PROJECT? the layout only applies on a cold start. rebuild with:"
+  echo "  tmux kill-session -t $S && workstation"
   exit 0
 fi
 
 # Build a "cd into project" prefix only when a project dir is configured.
 cd_project=""
-[ -n "$PROJECT" ] && cd_project="cd '$PROJECT' 2>/dev/null; "
+if [ -n "$PROJECT" ]; then
+  if [ -d "$PROJECT" ]; then
+    cd_project="cd '$PROJECT'; "
+  else
+    echo "note: DEVBOX_PROJECT='$PROJECT' does not exist (clone it first) — opening plain shells."
+  fi
+fi
 
 # Cold start: build the tabs.
 tmux new-session -d -s "$S" -n dev
