@@ -31,6 +31,9 @@ services:
       # (which works for SERVICE_FQDN_*) is silently left empty.
       - SERVICE_USER_DEVBOX=${SERVICE_USER_DEVBOX}
       - SERVICE_PASSWORD_DEVBOX=${SERVICE_PASSWORD_DEVBOX}
+      # Set to "true" to serve the dev URL with NO auth (anyone with the URL can
+      # see whatever runs on the dev port). Default: auth on.
+      - DEVBOX_PUBLIC=${DEVBOX_PUBLIC:-}
       # Which internal port your dev server listens on (Caddy proxies 9009 -> here).
       - DEVBOX_DEV_PORT=${DEVBOX_DEV_PORT:-3000}
 

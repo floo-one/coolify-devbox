@@ -88,6 +88,7 @@ which you re-auth `claude`/`gh` and re-clone).
 | `AUTHORIZED_KEYS` | ✅ | Your SSH public key(s), one per line. |
 | `SERVICE_PASSWORD_DEVBOX` | for the public URL | Auto-generate in Coolify. Enables the basic-auth dev URL. Omit for port-forward-only. |
 | `SERVICE_USER_DEVBOX` | optional | Basic-auth username (default `dev`). |
+| `DEVBOX_PUBLIC` | optional | `true` = serve the dev URL with **no auth** (anyone with the URL sees your dev server). |
 | `DEVBOX_DEV_PORT` | optional | Internal port your dev server uses (default `3000`). |
 | `DEVBOX_PROJECT` | optional | Repo path the `dev`/`claude` tabs `cd` into, e.g. `/home/dev/my-app` (relative = under `/home/dev`). |
 | `DEVBOX_DEV_CMD` | optional | Command the `dev` tab auto-runs on a cold start, e.g. `pnpm dev`. |

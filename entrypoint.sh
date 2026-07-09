@@ -33,27 +33,32 @@ chown dev:dev /home/dev
   printf 'export DEVBOX_DEV_PORT=%q\n' "${DEVBOX_DEV_PORT:-3000}"
 } > /etc/profile.d/00-devbox-env.sh
 
-# Public dev-server preview (optional): if a password is present, front the dev
-# server with a Caddy basic-auth gate on 9009 -> the dev port. The password comes
-# from Coolify (SERVICE_PASSWORD_DEVBOX) and is hashed here at runtime, so no secret
-# ever lives in git. Skip it entirely when no password is set — port-forward still
-# works. Caddy returns 502 until a dev server is actually listening on the dev port.
+# Public dev-server preview: Caddy fronts container port 9009 -> the dev port.
+# Auth: gated by basic auth when SERVICE_PASSWORD_DEVBOX is set (Coolify generates
+# it; hashed here at runtime, so no secret ever lives in git) — UNLESS
+# DEVBOX_PUBLIC=true, which serves the URL with NO auth (anyone with the URL sees
+# your dev server). Caddy returns 502 until something listens on the dev port.
 # Never let a proxy problem abort sshd — run the whole block tolerant of failure.
-if [ -n "${SERVICE_PASSWORD_DEVBOX:-}" ]; then
-  ( set +e
-    DEV_USER="${SERVICE_USER_DEVBOX:-dev}"
-    DEV_PORT="${DEVBOX_DEV_PORT:-3000}"
+( set +e
+  DEV_PORT="${DEVBOX_DEV_PORT:-3000}"
+  AUTH_HASH=""
+  if [ "${DEVBOX_PUBLIC:-}" != "true" ] && [ -n "${SERVICE_PASSWORD_DEVBOX:-}" ]; then
     # --plaintext is required: stdin-piping errors with "EOF" (hash-password wants
     # an interactive confirm when reading from stdin). Verified on caddy 2.x.
-    HASH="$(caddy hash-password --plaintext "$SERVICE_PASSWORD_DEVBOX")"
-    [ -n "$HASH" ] || { echo "hash-password produced nothing"; exit 1; }
-    mkdir -p /etc/caddy
-    # printf (not a heredoc) so the '$' in the bcrypt hash is written literally.
-    printf '{\n\tadmin off\n\tauto_https off\n}\n:9009 {\n\tbasic_auth {\n\t\t%s %s\n\t}\n\treverse_proxy 127.0.0.1:%s\n}\n' \
-      "$DEV_USER" "$HASH" "$DEV_PORT" > /etc/caddy/Caddyfile
-    caddy start --config /etc/caddy/Caddyfile --adapter caddyfile
-  ) || echo "warning: caddy proxy setup failed; public dev URL disabled (SSH + port-forward still work)"
-fi
+    AUTH_HASH="$(caddy hash-password --plaintext "$SERVICE_PASSWORD_DEVBOX")"
+    [ -n "$AUTH_HASH" ] || { echo "hash-password produced nothing"; exit 1; }
+  fi
+  mkdir -p /etc/caddy
+  # printf (not a heredoc) so the '$' in the bcrypt hash is written literally.
+  {
+    printf '{\n\tadmin off\n\tauto_https off\n}\n:9009 {\n'
+    if [ -n "$AUTH_HASH" ]; then
+      printf '\tbasic_auth {\n\t\t%s %s\n\t}\n' "${SERVICE_USER_DEVBOX:-dev}" "$AUTH_HASH"
+    fi
+    printf '\treverse_proxy 127.0.0.1:%s\n}\n' "$DEV_PORT"
+  } > /etc/caddy/Caddyfile
+  caddy start --config /etc/caddy/Caddyfile --adapter caddyfile
+) || echo "warning: caddy proxy setup failed; public dev URL disabled (SSH + port-forward still work)"
 
 exec /usr/sbin/sshd -D -e \
   -h "$HOSTKEY_DIR/ssh_host_ed25519_key" \
