@@ -2,7 +2,7 @@ FROM node:22-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-server git ripgrep fzf tmux curl wget sudo ca-certificates \
-    build-essential python3 unzip less vim nano micro \
+    build-essential python3 unzip less vim nano micro ncurses-term \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir /run/sshd
 
@@ -27,6 +27,7 @@ RUN sed -i \
     -e 's/#PermitRootLogin.*/PermitRootLogin no/' \
     /etc/ssh/sshd_config
 
+COPY tmux.conf /etc/tmux.conf
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 EXPOSE 22

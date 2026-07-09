@@ -25,6 +25,9 @@ claude            # already installed & authenticated
 ## How you use it
 
 - **Connect:** `ssh devbox` → drops into tmux `main` (auto-reattaches next time).
+- **Multiple things at once** (don't open a second SSH — use tmux; prefix is `Ctrl-b`):
+  new window `Ctrl-b c`, switch windows `Shift+←/→`, split `Ctrl-b |` / `Ctrl-b -`, move
+  between panes `Alt+←/↑/↓/→`, detach (leave everything running) `Ctrl-b d`. Mouse works too.
 - **Edit files** (pick one):
   - **VS Code / Cursor Remote-SSH** → connect to host `devbox`, open a folder. Full editor, the
     files stay on the box. *Recommended.*
@@ -41,6 +44,7 @@ claude            # already installed & authenticated
 | `Dockerfile` | `node:22` + openssh + Claude Code, pnpm, git, tmux, gh, micro. User `dev`, key-only SSH. |
 | `entrypoint.sh` | Injects your public key at runtime; persists SSH **host keys** on the volume (redeploys don't trip host-key warnings). |
 | `docker-compose.yml` | Publishes `2222:22`, mounts the `devhome` volume, healthchecks sshd. |
+| `tmux.conf` | Sensible, plugin-free tmux defaults (installed globally at `/etc/tmux.conf`). |
 
 Durable state lives only in the `devhome` volume (`/home/dev`) or in git — the image is
 disposable. The volume survives redeploys; it does **not** survive a worker-node swap (after
