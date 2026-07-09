@@ -71,7 +71,7 @@ port 443 / `wss` (e.g. in `nuxt.config`: `vite: { server: { hmr: { clientPort: 4
 |---|---|
 | `Dockerfile` | `node:22` + openssh + Claude Code, pnpm, git, tmux, gh, micro, caddy. User `dev`, key-only SSH. |
 | `entrypoint.sh` | Injects your public key at runtime; persists SSH **host keys** on the volume; sets up the dev-URL auth proxy from env. |
-| `docker-compose.yml` | Publishes `2222:22`, the `SERVICE_FQDN`/`SERVICE_PASSWORD` magic vars for the dev URL, mounts the `devhome` volume, healthchecks sshd. |
+| `docker-compose.yaml` | Publishes `2222:22`, the `SERVICE_FQDN`/`SERVICE_PASSWORD` magic vars for the dev URL, mounts the `devhome` volume, healthchecks sshd. (`.yaml` — matches Coolify's default compose location.) |
 | `tmux.conf` | Sensible, plugin-free tmux defaults (installed globally at `/etc/tmux.conf`). |
 | `profile-devbox.sh` | Auto-attaches interactive SSH logins to the `main` tmux session. |
 | `workstation` | Cold-start tmux layout: `dev` / `claude` / `shell` tabs (opens in `DEVBOX_PROJECT` if set). |
@@ -116,7 +116,7 @@ Paste this into Claude Code (or any coding agent) on your machine.
 ```text
 Set up a personal cloud "devbox" on my Coolify server that I SSH into and that runs Claude Code.
 Deploy it straight from https://github.com/floo-one/coolify-devbox — use its Dockerfile,
-entrypoint.sh, docker-compose.yml etc. AS-IS; don't rewrite them. (Fork it only if I ask to customize.)
+entrypoint.sh, docker-compose.yaml etc. AS-IS; don't rewrite them. (Fork it only if I ask to customize.)
 
 I'll give you:
 - My Coolify URL and API token. Treat the token as a secret: never echo it, never write it to a
