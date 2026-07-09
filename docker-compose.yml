@@ -3,8 +3,27 @@ services:
     build: .
     ports:
       - "2222:22"
+    # Dev-server port. The public URL is Coolify's own domain for this app
+    # (App -> Domains), which Coolify routes to this port. It is password-protected by the
+    # basic-auth middleware defined below. The URL returns 502 unless a dev server is
+    # actually running inside the box on 0.0.0.0:9009 (e.g. `HOST=0.0.0.0 pnpm dev`).
+    expose:
+      - "9009"
     environment:
       - AUTHORIZED_KEYS=${AUTHORIZED_KEYS}
+    labels:
+      # Basic-auth for the public dev URL. Coolify auto-attaches any middleware defined here
+      # to the domain router it generates (App -> Domains), so this line alone protects the
+      # URL — no custom router needed. (Env-var refs like ${VAR} do NOT work in labels here,
+      # and a per-app Custom Label in Coolify's UI is ignored for compose apps — the hash has
+      # to be inline.) It is safe in this PUBLIC repo only because it is a SHA1 of a LONG
+      # RANDOM password; do not reuse a weak/short one here.
+      # Must be SHA1 {SHA} — NOT apr1/bcrypt: Coolify doubles every "$" when it renders the
+      # compose, which corrupts hashes containing "$". To rotate:
+      #   printf '%s' 'NEW_LONG_RANDOM_PASSWORD' | openssl sha1 -binary | openssl base64
+      #   -> put as  dev:{SHA}<output>  ; also update SERVICE_PASSWORD_DEVBOX in Coolify env.
+      # And set the Coolify Domain WITH the dev port, e.g. https://<your-domain>:9009
+      - "traefik.http.middlewares.devbox-auth.basicauth.users=dev:{SHA}iux16D66lFa98uMQ/draT8q/X2Q="
     volumes:
       - devhome:/home/dev
     restart: unless-stopped
