@@ -2,15 +2,15 @@
 # workstation — lay out the standard tmux tabs for this devbox on a COLD start.
 #
 # Layout (tmux windows == iTerm tabs in -CC control mode):
-#   1: dev     — where you run your dev server (cd'd into your project if set)
+#   1: dev     — cd'd into your project; auto-runs your dev command if set
 #   2: claude  — auto-starts Claude Code (in the project if set, else $HOME)
 #   3: shell   — a plain login shell (nothing auto-run)
 #
 # Configure via env (set in Coolify's app env, arrives on every SSH login):
 #   DEVBOX_PROJECT — path to your working repo, e.g. /home/dev/my-app
-# Optional: leave empty and you just get three plain shells.
-# (No auto-run dev command on purpose: tmux persists across reconnects, so a
-# cold start is rare — and your dev command is one ↑ Enter away in the dev tab.)
+#                    (relative values resolve under $HOME)
+#   DEVBOX_DEV_CMD — command the dev tab auto-runs on a cold start, e.g. "pnpm dev"
+# Both optional: with neither set you just get three plain shells.
 #
 # Non-destructive: if the session already exists it is left untouched, because
 # tmux persists your windows across reconnects. Only a cold start lays it out.
@@ -18,12 +18,13 @@ set -euo pipefail
 
 S=main
 PROJECT="${DEVBOX_PROJECT:-}"
+DEV_CMD="${DEVBOX_DEV_CMD:-}"
 # A relative value ("my-app") means a directory under $HOME.
 [ -n "$PROJECT" ] && [ "${PROJECT#/}" = "$PROJECT" ] && PROJECT="$HOME/$PROJECT"
 
 if tmux has-session -t "$S" 2>/dev/null; then
   echo "session '$S' already exists — leaving it untouched (tmux persists across reconnects)."
-  echo "changed DEVBOX_PROJECT? the layout only applies on a cold start. rebuild with:"
+  echo "changed DEVBOX_PROJECT / DEVBOX_DEV_CMD? the layout only applies on a cold start. rebuild with:"
   echo "  tmux kill-session -t $S && workstation"
   exit 0
 fi
@@ -40,7 +41,11 @@ fi
 
 # Cold start: build the tabs.
 tmux new-session -d -s "$S" -n dev
-[ -n "$PROJECT" ] && tmux send-keys -t "$S:dev" "${cd_project}" Enter
+if [ -n "$DEV_CMD" ]; then
+  tmux send-keys -t "$S:dev" "${cd_project}${DEV_CMD}" Enter
+elif [ -n "$cd_project" ]; then
+  tmux send-keys -t "$S:dev" "${cd_project}" Enter
+fi
 
 tmux new-window -t "$S" -n claude
 tmux send-keys  -t "$S:claude" "${cd_project}claude" Enter

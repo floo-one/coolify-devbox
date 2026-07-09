@@ -40,8 +40,10 @@ services:
 
       # --- Optional workstation auto-layout ------------------------------------
       # If set, the tmux tabs (dev/claude) open in this repo path on a cold start,
-      # e.g. /home/dev/my-app. Leave empty for a plain box.
+      # e.g. /home/dev/my-app (relative = under /home/dev). Leave empty for a plain box.
       - DEVBOX_PROJECT=${DEVBOX_PROJECT:-}
+      # If set, the dev tab auto-runs this on a cold start, e.g. "pnpm dev".
+      - DEVBOX_DEV_CMD=${DEVBOX_DEV_CMD:-}
     # Documents the dev-server port for Coolify's SERVICE_FQDN routing.
     expose:
       - "9009"

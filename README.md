@@ -75,7 +75,7 @@ port 443 / `wss` (e.g. in `nuxt.config`: `vite: { server: { hmr: { clientPort: 4
 | `tmux.conf` | Sensible, plugin-free tmux defaults (installed globally at `/etc/tmux.conf`). |
 | `profile-devbox.sh` | Auto-attaches interactive SSH logins to the `main` tmux session; runs the setup wizard first if needed. |
 | `devbox-setup` | First-login wizard: git identity → `gh auth login` → Claude OAuth. Idempotent; re-run any time. |
-| `workstation` | Cold-start tmux layout: `dev` / `claude` / `shell` tabs (opens in `DEVBOX_PROJECT` if set). |
+| `workstation` | Cold-start tmux layout: `dev` / `claude` / `shell` tabs (opens in `DEVBOX_PROJECT`; `dev` auto-runs `DEVBOX_DEV_CMD`). |
 
 Durable state lives only in the `devhome` volume (`/home/dev`) or in git — the image is
 disposable. The volume survives redeploys; it does **not** survive a worker-node swap (after
@@ -89,7 +89,8 @@ which you re-auth `claude`/`gh` and re-clone).
 | `SERVICE_PASSWORD_DEVBOX` | for the public URL | Auto-generate in Coolify. Enables the basic-auth dev URL. Omit for port-forward-only. |
 | `SERVICE_USER_DEVBOX` | optional | Basic-auth username (default `dev`). |
 | `DEVBOX_DEV_PORT` | optional | Internal port your dev server uses (default `3000`). |
-| `DEVBOX_PROJECT` | optional | Repo path the `dev`/`claude` tabs `cd` into, e.g. `/home/dev/my-app`. |
+| `DEVBOX_PROJECT` | optional | Repo path the `dev`/`claude` tabs `cd` into, e.g. `/home/dev/my-app` (relative = under `/home/dev`). |
+| `DEVBOX_DEV_CMD` | optional | Command the `dev` tab auto-runs on a cold start, e.g. `pnpm dev`. |
 
 `SERVICE_FQDN_DEVBOX_9009` is declared in the compose so Coolify auto-generates the dev URL —
 you don't set the env var by hand. Gotcha (Coolify 4.1.x, git-based compose apps): the generated
