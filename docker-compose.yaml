@@ -22,8 +22,11 @@ services:
       # in the app's env vars, never committed here) and the entrypoint turns it into
       # an in-container Caddy basic-auth gate. User defaults to "dev". Rotate the URL
       # password by regenerating SERVICE_PASSWORD_DEVBOX in Coolify + restart.
-      - SERVICE_USER_DEVBOX
-      - SERVICE_PASSWORD_DEVBOX
+      # NOTE: the ${...} reference form is required — Coolify only auto-generates
+      # SERVICE_USER_*/SERVICE_PASSWORD_* for interpolated references; a bare name
+      # (which works for SERVICE_FQDN_*) is silently left empty.
+      - SERVICE_USER_DEVBOX=${SERVICE_USER_DEVBOX}
+      - SERVICE_PASSWORD_DEVBOX=${SERVICE_PASSWORD_DEVBOX}
       # Which internal port your dev server listens on (Caddy proxies 9009 -> here).
       - DEVBOX_DEV_PORT=${DEVBOX_DEV_PORT:-3000}
 
