@@ -1,29 +1,44 @@
+# documentation: https://github.com/floo-one/coolify-devbox
+# slogan: A persistent SSH dev box running Claude Code, on your own Coolify server.
+# category: development
+# tags: devbox,ssh,claude-code,development,remote,tmux
+# port: 9009
+
 services:
   devbox:
     build: .
+    # SSH. Published as a host TCP port so you can `ssh -p 2222 dev@<server>`.
+    # Open 2222 in your cloud firewall. (Coolify's domain below is HTTP-only, for the
+    # dev-server preview — it does not carry SSH.)
     ports:
       - "2222:22"
-    # Dev-server port. The public URL is Coolify's own domain for this app
-    # (App -> Domains), which Coolify routes to this port. It is password-protected by the
-    # basic-auth middleware defined below. The URL returns 502 unless a dev server is
-    # actually running inside the box on 0.0.0.0:9009 (e.g. `HOST=0.0.0.0 pnpm dev`).
+    environment:
+      # --- Public dev-server preview (optional) --------------------------------
+      # Coolify sees this magic var and auto-generates a public HTTPS domain that
+      # Traefik routes to container port 9009. No manual Domains field, no ":9009"
+      # trick. Delete this line if you only ever preview via `ssh -L` port-forward.
+      - SERVICE_FQDN_DEVBOX_9009
+      # Basic-auth for that public URL. Coolify auto-generates the password (shown
+      # in the app's env vars, never committed here) and the entrypoint turns it into
+      # an in-container Caddy basic-auth gate. User defaults to "dev". Rotate the URL
+      # password by regenerating SERVICE_PASSWORD_DEVBOX in Coolify + restart.
+      - SERVICE_USER_DEVBOX
+      - SERVICE_PASSWORD_DEVBOX
+      # Which internal port your dev server listens on (Caddy proxies 9009 -> here).
+      - DEVBOX_DEV_PORT=${DEVBOX_DEV_PORT:-3000}
+
+      # --- SSH access ----------------------------------------------------------
+      # Your SSH public key(s), one per line. Set this in Coolify's env vars.
+      - AUTHORIZED_KEYS=${AUTHORIZED_KEYS}
+
+      # --- Optional workstation auto-layout ------------------------------------
+      # If set, `workstation` (and login) prep a tmux tab that cd's into this repo
+      # and runs your dev command. Leave unset for a plain box.
+      - DEVBOX_PROJECT=${DEVBOX_PROJECT:-}
+      - DEVBOX_DEV_CMD=${DEVBOX_DEV_CMD:-}
+    # Documents the dev-server port for Coolify's SERVICE_FQDN routing.
     expose:
       - "9009"
-    environment:
-      - AUTHORIZED_KEYS=${AUTHORIZED_KEYS}
-    labels:
-      # Basic-auth for the public dev URL. Coolify auto-attaches any middleware defined here
-      # to the domain router it generates (App -> Domains), so this line alone protects the
-      # URL — no custom router needed. (Env-var refs like ${VAR} do NOT work in labels here,
-      # and a per-app Custom Label in Coolify's UI is ignored for compose apps — the hash has
-      # to be inline.) It is safe in this PUBLIC repo only because it is a SHA1 of a LONG
-      # RANDOM password; do not reuse a weak/short one here.
-      # Must be SHA1 {SHA} — NOT apr1/bcrypt: Coolify doubles every "$" when it renders the
-      # compose, which corrupts hashes containing "$". To rotate:
-      #   printf '%s' 'NEW_LONG_RANDOM_PASSWORD' | openssl sha1 -binary | openssl base64
-      #   -> put as  dev:{SHA}<output>  ; also update SERVICE_PASSWORD_DEVBOX in Coolify env.
-      # And set the Coolify Domain WITH the dev port, e.g. https://<your-domain>:9009
-      - "traefik.http.middlewares.devbox-auth.basicauth.users=dev:{SHA}iux16D66lFa98uMQ/draT8q/X2Q="
     volumes:
       - devhome:/home/dev
     restart: unless-stopped

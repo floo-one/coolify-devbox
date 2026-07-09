@@ -2,16 +2,22 @@
 # workstation — lay out the standard tmux tabs for this devbox on a COLD start.
 #
 # Layout (tmux windows == iTerm tabs in -CC control mode):
-#   1: dev     — auto-starts the website dev server (if the repo is cloned)
-#   2: claude  — auto-starts Claude Code
+#   1: dev     — cd's into your project and runs your dev command (see below)
+#   2: claude  — auto-starts Claude Code (in the project if set, else $HOME)
 #   3: shell   — a plain login shell (nothing auto-run)
+#
+# Configure via env (set these in Coolify's app env, they arrive on every SSH login):
+#   DEVBOX_PROJECT — path to your working repo, e.g. /home/dev/my-app
+#   DEVBOX_DEV_CMD — command to start your dev server, e.g. "pnpm dev"
+# Both optional: with neither set you just get three plain shells.
 #
 # Non-destructive: if the session already exists it is left untouched, because
 # tmux persists your windows across reconnects. Only a cold start lays it out.
 set -euo pipefail
 
 S=main
-PROJECT="$HOME/floo.one-website"
+PROJECT="${DEVBOX_PROJECT:-}"
+DEV_CMD="${DEVBOX_DEV_CMD:-}"
 
 if tmux has-session -t "$S" 2>/dev/null; then
   echo "session '$S' already exists — leaving it untouched (tmux persists across reconnects)."
@@ -19,16 +25,23 @@ if tmux has-session -t "$S" 2>/dev/null; then
   exit 0
 fi
 
-# Cold start: build the tabs and kick off the usual commands.
-# (cd ... guarded so an un-cloned repo just leaves a normal shell in the tab.)
+# Build a "cd into project" prefix only when a project dir is configured.
+cd_project=""
+[ -n "$PROJECT" ] && cd_project="cd '$PROJECT' 2>/dev/null; "
+
+# Cold start: build the tabs.
 tmux new-session -d -s "$S" -n dev
-tmux send-keys   -t "$S:dev"    "cd $PROJECT 2>/dev/null && HOST=0.0.0.0 pnpm dev:web -- --port 9009" Enter
+if [ -n "$PROJECT" ] && [ -n "$DEV_CMD" ]; then
+  tmux send-keys -t "$S:dev" "${cd_project}${DEV_CMD}" Enter
+elif [ -n "$PROJECT" ]; then
+  tmux send-keys -t "$S:dev" "${cd_project}" Enter
+fi
 
-tmux new-window  -t "$S" -n claude
-tmux send-keys   -t "$S:claude" "cd $PROJECT 2>/dev/null; claude" Enter
+tmux new-window -t "$S" -n claude
+tmux send-keys  -t "$S:claude" "${cd_project}claude" Enter
 
-tmux new-window  -t "$S" -n shell     # plain shell, nothing auto-run
+tmux new-window -t "$S" -n shell     # plain shell, nothing auto-run
 
-tmux select-window -t "$S:claude"     # land on the Claude Code tab
+tmux select-window -t "$S:claude"    # land on the Claude Code tab
 
 echo "workstation ready — session '$S' with tabs: dev / claude / shell"

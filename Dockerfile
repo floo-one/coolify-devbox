@@ -11,6 +11,12 @@ RUN useradd -m -s /bin/bash dev \
 
 RUN npm i -g @anthropic-ai/claude-code pnpm
 
+# Caddy — fronts the public dev-server URL with basic auth (see entrypoint.sh).
+# Single static binary; arch-matched so it works on amd64 and arm64 build hosts.
+RUN curl -fsSL "https://caddyserver.com/api/download?os=linux&arch=$(dpkg --print-architecture)" \
+       -o /usr/local/bin/caddy \
+    && chmod +x /usr/local/bin/caddy
+
 # GitHub CLI (official apt repo) — used for `gh auth login` inside the box
 RUN mkdir -p -m 755 /etc/apt/keyrings \
     && wget -nv -O- https://cli.github.com/packages/githubcli-archive-keyring.gpg \
@@ -29,7 +35,8 @@ RUN sed -i \
 
 COPY tmux.conf /etc/tmux.conf
 COPY workstation /usr/local/bin/workstation
+COPY profile-devbox.sh /etc/profile.d/99-devbox-tmux.sh
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh /usr/local/bin/workstation
-EXPOSE 22
+EXPOSE 22 9009
 ENTRYPOINT ["/entrypoint.sh"]
