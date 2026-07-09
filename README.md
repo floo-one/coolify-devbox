@@ -74,7 +74,7 @@ port 443 / `wss` (e.g. in `nuxt.config`: `vite: { server: { hmr: { clientPort: 4
 | `docker-compose.yml` | Publishes `2222:22`, the `SERVICE_FQDN`/`SERVICE_PASSWORD` magic vars for the dev URL, mounts the `devhome` volume, healthchecks sshd. |
 | `tmux.conf` | Sensible, plugin-free tmux defaults (installed globally at `/etc/tmux.conf`). |
 | `profile-devbox.sh` | Auto-attaches interactive SSH logins to the `main` tmux session. |
-| `workstation` | Cold-start tmux layout: `dev` / `claude` / `shell` tabs (driven by `DEVBOX_PROJECT` / `DEVBOX_DEV_CMD`). |
+| `workstation` | Cold-start tmux layout: `dev` / `claude` / `shell` tabs (opens in `DEVBOX_PROJECT` if set). |
 
 Durable state lives only in the `devhome` volume (`/home/dev`) or in git — the image is
 disposable. The volume survives redeploys; it does **not** survive a worker-node swap (after
@@ -89,7 +89,6 @@ which you re-auth `claude`/`gh` and re-clone).
 | `SERVICE_USER_DEVBOX` | optional | Basic-auth username (default `dev`). |
 | `DEVBOX_DEV_PORT` | optional | Internal port your dev server uses (default `3000`). |
 | `DEVBOX_PROJECT` | optional | Repo path the `dev`/`claude` tabs `cd` into, e.g. `/home/dev/my-app`. |
-| `DEVBOX_DEV_CMD` | optional | Command the `dev` tab auto-runs, e.g. `pnpm dev`. |
 
 `SERVICE_FQDN_DEVBOX_9009` is declared in the compose so Coolify auto-generates the dev URL and
 routes it to port 9009 — you don't set it by hand.

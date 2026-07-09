@@ -32,10 +32,9 @@ services:
       - AUTHORIZED_KEYS=${AUTHORIZED_KEYS}
 
       # --- Optional workstation auto-layout ------------------------------------
-      # If set, `workstation` (and login) prep a tmux tab that cd's into this repo
-      # and runs your dev command. Leave unset for a plain box.
+      # If set, the tmux tabs (dev/claude) open in this repo path on a cold start,
+      # e.g. /home/dev/my-app. Leave empty for a plain box.
       - DEVBOX_PROJECT=${DEVBOX_PROJECT:-}
-      - DEVBOX_DEV_CMD=${DEVBOX_DEV_CMD:-}
     # Documents the dev-server port for Coolify's SERVICE_FQDN routing.
     expose:
       - "9009"
