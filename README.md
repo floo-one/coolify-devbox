@@ -73,7 +73,8 @@ port 443 / `wss` (e.g. in `nuxt.config`: `vite: { server: { hmr: { clientPort: 4
 | `entrypoint.sh` | Injects your public key at runtime; persists SSH **host keys** on the volume; sets up the dev-URL auth proxy from env. |
 | `docker-compose.yaml` | Publishes `2222:22`, the `SERVICE_FQDN`/`SERVICE_PASSWORD` magic vars for the dev URL, mounts the `devhome` volume, healthchecks sshd. (`.yaml` — matches Coolify's default compose location.) |
 | `tmux.conf` | Sensible, plugin-free tmux defaults (installed globally at `/etc/tmux.conf`). |
-| `profile-devbox.sh` | Auto-attaches interactive SSH logins to the `main` tmux session. |
+| `profile-devbox.sh` | Auto-attaches interactive SSH logins to the `main` tmux session; runs the setup wizard first if needed. |
+| `devbox-setup` | First-login wizard: git identity → `gh auth login` → Claude OAuth. Idempotent; re-run any time. |
 | `workstation` | Cold-start tmux layout: `dev` / `claude` / `shell` tabs (opens in `DEVBOX_PROJECT` if set). |
 
 Durable state lives only in the `devhome` volume (`/home/dev`) or in git — the image is
@@ -107,7 +108,8 @@ Fastest path: **[let your AI set it up](#let-my-ai-set-it-up)**. Or do it by han
    > the extra so exactly one remains.
 4. Make sure TCP **2222** is open to the box (cloud firewall), add a `Host devbox` block to
    `~/.ssh/config` (`Port 2222`, `User dev`, your `IdentityFile`), and `ssh devbox`.
-5. First login: run `claude` (OAuth), set `git config`, `gh auth login`.
+5. First login: a setup wizard greets you and walks through git identity, `gh auth login`, and
+   Claude Code OAuth. (Dismiss it and run `devbox-setup` later if you prefer.)
 
 ## Let my AI set it up
 
@@ -142,8 +144,8 @@ Do this, verifying each step before moving on:
 
 Hard rules: key-only SSH (no passwords), never mount the Docker socket, never enable
 --dangerously-skip-permissions. All durable state must live in the /home/dev volume or in git.
-After it's up, I'll finish the one-time interactive setup myself: run `claude` for OAuth, set my
-git identity, and `gh auth login`.
+After it's up, I'll finish the one-time interactive setup myself — the box greets first logins
+with a `devbox-setup` wizard (git identity, gh auth, Claude OAuth).
 ```
 
 ## License

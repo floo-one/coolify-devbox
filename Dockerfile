@@ -35,8 +35,9 @@ RUN sed -i \
 
 COPY tmux.conf /etc/tmux.conf
 COPY workstation /usr/local/bin/workstation
+COPY devbox-setup /usr/local/bin/devbox-setup
 COPY profile-devbox.sh /etc/profile.d/99-devbox-tmux.sh
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh /usr/local/bin/workstation
+RUN chmod +x /entrypoint.sh /usr/local/bin/workstation /usr/local/bin/devbox-setup
 EXPOSE 22 9009
 ENTRYPOINT ["/entrypoint.sh"]

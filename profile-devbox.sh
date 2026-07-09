@@ -8,6 +8,11 @@
 case "$-" in
   *i*)
     if [ -z "${TMUX:-}" ] && [ -n "${SSH_TTY:-}" ] && command -v tmux >/dev/null 2>&1; then
+      # First-time setup wizard (git identity / gh / claude). Runs until every
+      # item is done or the user dismisses it; then never again automatically.
+      if [ ! -f "$HOME/.local/state/devbox/setup-done" ]; then
+        devbox-setup || true
+      fi
       workstation >/dev/null 2>&1 || true
       exec tmux new-session -A -s main
     fi

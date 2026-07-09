@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# devbox-setup — first-time setup wizard for the devbox.
+#
+# Walks through the three things a fresh box (or a fresh devhome volume) needs:
+#   1. git identity   (user.name + user.email for commits)
+#   2. GitHub CLI     (gh auth login — device flow, works over SSH)
+#   3. Claude Code    (OAuth login)
+#
+# Idempotent: shows a checklist and only offers what's missing — safe to run any
+# time (`devbox-setup`). Auto-runs on interactive SSH login until everything is
+# done or you dismiss it (see profile-devbox.sh). Marker: ~/.local/state/devbox/setup-done
+set -uo pipefail   # deliberately no -e: a failed sub-step must not kill the wizard
+
+MARKER_DIR="$HOME/.local/state/devbox"
+MARKER="$MARKER_DIR/setup-done"
+
+ok()   { printf '  \033[32m✓\033[0m %s\n' "$1"; }
+todo() { printf '  \033[33m○\033[0m %s\n' "$1"; }
+ask()  { # ask "question" -> 0 on yes (default yes)
+  printf '\033[1m%s\033[0m [Y/n] ' "$1"; read -r r </dev/tty || return 1
+  [ -z "$r" ] || [ "$r" = "y" ] || [ "$r" = "Y" ]
+}
+
+have_git_identity() { [ -n "$(git config --global user.name 2>/dev/null)" ] && [ -n "$(git config --global user.email 2>/dev/null)" ]; }
+have_gh()           { gh auth status >/dev/null 2>&1; }
+have_claude()       { [ -f "$HOME/.claude/.credentials.json" ]; }
+all_done()          { have_git_identity && have_gh && have_claude; }
+
+show_status() {
+  echo
+  echo "  devbox setup"
+  echo "  ────────────"
+  if have_git_identity; then ok "git identity — $(git config --global user.name) <$(git config --global user.email)>"
+  else todo "git identity (name + email on your commits)"; fi
+  if have_gh; then ok "GitHub CLI — $(gh api user -q .login 2>/dev/null || echo authenticated)"
+  else todo "GitHub CLI (clone/push private repos)"; fi
+  if have_claude; then ok "Claude Code — authenticated"
+  else todo "Claude Code (OAuth login)"; fi
+  echo
+}
+
+show_status
+
+if all_done; then
+  mkdir -p "$MARKER_DIR"; touch "$MARKER"
+  echo "  All set. Re-run \`devbox-setup\` any time."
+  exit 0
+fi
+
+# No controlling TTY (scripted/non-interactive call): show the checklist above,
+# but never prompt and never write the marker — try again on a real login.
+if ! (exec </dev/tty) 2>/dev/null; then
+  echo "  (non-interactive — run \`devbox-setup\` from an SSH session to complete these)"
+  exit 0
+fi
+
+# ---- 1. git identity --------------------------------------------------------
+if ! have_git_identity && ask "Set up your git identity now?"; then
+  printf '  name:  '; read -r gname  </dev/tty
+  printf '  email: '; read -r gemail </dev/tty
+  [ -n "$gname" ]  && git config --global user.name  "$gname"
+  [ -n "$gemail" ] && git config --global user.email "$gemail"
+  have_git_identity && ok "git identity saved" || echo "  (skipped — left incomplete)"
+fi
+
+# ---- 2. GitHub CLI ----------------------------------------------------------
+if ! have_gh && ask "Log in to GitHub now? (device flow — you'll enter a code on github.com)"; then
+  gh auth login || echo "  (gh login did not complete — re-run devbox-setup later)"
+fi
+
+# ---- 3. Claude Code ---------------------------------------------------------
+if ! have_claude && ask "Log in to Claude Code now?"; then
+  echo "  Launching claude — complete the login it shows, then exit (Ctrl-C twice or /exit) to continue."
+  claude || true
+fi
+
+echo
+if all_done; then
+  mkdir -p "$MARKER_DIR"; touch "$MARKER"
+  echo "  All set — this wizard won't auto-run again. Re-run \`devbox-setup\` any time."
+else
+  show_status
+  if ask "Some items are still open. Ask again on next login?"; then
+    echo "  OK — I'll check again next login. (Or run \`devbox-setup\` yourself.)"
+  else
+    mkdir -p "$MARKER_DIR"; touch "$MARKER"
+    echo "  Dismissed — run \`devbox-setup\` manually whenever you like."
+  fi
+fi
