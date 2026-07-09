@@ -91,8 +91,11 @@ which you re-auth `claude`/`gh` and re-clone).
 | `DEVBOX_DEV_PORT` | optional | Internal port your dev server uses (default `3000`). |
 | `DEVBOX_PROJECT` | optional | Repo path the `dev`/`claude` tabs `cd` into, e.g. `/home/dev/my-app`. |
 
-`SERVICE_FQDN_DEVBOX_9009` is declared in the compose so Coolify auto-generates the dev URL and
-routes it to port 9009 — you don't set it by hand.
+`SERVICE_FQDN_DEVBOX_9009` is declared in the compose so Coolify auto-generates the dev URL —
+you don't set the env var by hand. Gotcha (Coolify 4.1.x, git-based compose apps): the generated
+domain isn't always registered with the proxy. If the URL doesn't route after the first deploy,
+set the app's **Domains** field for service `devbox` to `https://<generated-domain>:9009` (the
+`:9009` matters — the container also exposes port 22) and redeploy.
 
 ## Setup
 

@@ -14,9 +14,13 @@ services:
       - "2222:22"
     environment:
       # --- Public dev-server preview (optional) --------------------------------
-      # Coolify sees this magic var and auto-generates a public HTTPS domain that
-      # Traefik routes to container port 9009. No manual Domains field, no ":9009"
-      # trick. Delete this line if you only ever preview via `ssh -L` port-forward.
+      # Coolify sees this magic var and generates a public HTTPS domain for port
+      # 9009. NOTE (Coolify 4.1.x, git-based compose apps): the domain lands in the
+      # SERVICE_FQDN_DEVBOX env var but is NOT always registered with the proxy —
+      # if the URL doesn't route after the first deploy, set the app's Domains
+      # field for service "devbox" to  https://<that-domain>:9009  (port included,
+      # so Traefik picks 9009 over the also-exposed port 22) and redeploy.
+      # Delete this line if you only ever preview via `ssh -L` port-forward.
       - SERVICE_FQDN_DEVBOX_9009
       # Basic-auth for that public URL. Coolify auto-generates the password (shown
       # in the app's env vars, never committed here) and the entrypoint turns it into

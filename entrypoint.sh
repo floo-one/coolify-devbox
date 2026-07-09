@@ -42,8 +42,10 @@ if [ -n "${SERVICE_PASSWORD_DEVBOX:-}" ]; then
   ( set +e
     DEV_USER="${SERVICE_USER_DEVBOX:-dev}"
     DEV_PORT="${DEVBOX_DEV_PORT:-3000}"
-    # Pipe via stdin (no trailing newline) — version-stable across Caddy releases.
-    HASH="$(printf '%s' "$SERVICE_PASSWORD_DEVBOX" | caddy hash-password)"
+    # --plaintext is required: stdin-piping errors with "EOF" (hash-password wants
+    # an interactive confirm when reading from stdin). Verified on caddy 2.x.
+    HASH="$(caddy hash-password --plaintext "$SERVICE_PASSWORD_DEVBOX")"
+    [ -n "$HASH" ] || { echo "hash-password produced nothing"; exit 1; }
     mkdir -p /etc/caddy
     # printf (not a heredoc) so the '$' in the bcrypt hash is written literally.
     printf '{\n\tadmin off\n\tauto_https off\n}\n:9009 {\n\tbasic_auth {\n\t\t%s %s\n\t}\n\treverse_proxy 127.0.0.1:%s\n}\n' \
