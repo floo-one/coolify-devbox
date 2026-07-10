@@ -71,7 +71,7 @@ port 443 / `wss` (e.g. in `nuxt.config`: `vite: { server: { hmr: { clientPort: 4
 |---|---|
 | `Dockerfile` | `node:22` + openssh + Claude Code, pnpm, git, tmux, gh, micro, caddy. User `dev`, key-only SSH. |
 | `entrypoint.sh` | Injects your public key at runtime; persists SSH **host keys** on the volume; sets up the dev-URL auth proxy from env. |
-| `docker-compose.yaml` | Publishes `2222:22`, the `SERVICE_FQDN`/`SERVICE_PASSWORD` magic vars for the dev URL, mounts the `devhome` volume, healthchecks sshd. (`.yaml` — matches Coolify's default compose location.) |
+| `docker-compose.yaml` | Publishes SSH on `DEVBOX_SSH_PORT` (default 2222), the `SERVICE_FQDN`/`SERVICE_PASSWORD` magic vars for the dev URL, mounts the `devhome` volume, healthchecks sshd. (`.yaml` — matches Coolify's default compose location.) |
 | `tmux.conf` | Sensible, plugin-free tmux defaults (installed globally at `/etc/tmux.conf`). |
 | `profile-devbox.sh` | Auto-attaches interactive SSH logins to the `main` tmux session; runs the setup wizard first if needed. |
 | `devbox-setup` | First-login wizard: git identity → `gh auth login` → Claude OAuth. Idempotent; re-run any time. |
@@ -92,6 +92,7 @@ which you re-auth `claude`/`gh` and re-clone).
 | `DEVBOX_DEV_PORT` | optional | Internal port your dev server uses (default `3000`). |
 | `DEVBOX_PROJECT` | optional | Repo path the `dev`/`claude` tabs `cd` into, e.g. `/home/dev/my-app` (relative = under `/home/dev`). |
 | `DEVBOX_DEV_CMD` | optional | Command the `dev` tab auto-runs on a cold start, e.g. `pnpm dev`. |
+| `DEVBOX_SSH_PORT` | optional | Host port for SSH (default `2222`). Set a unique one per app to run several devboxes on one server — each instance gets its own volume, domain, and password automatically. |
 
 Every SSH shell also gets read-only `DEVBOX_URL` / `DEVBOX_FQDN` (the box's public dev URL) —
 use them in your project for CORS / auth trusted-origins / absolute URLs, e.g.

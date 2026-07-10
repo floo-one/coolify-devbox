@@ -8,10 +8,11 @@ services:
   devbox:
     build: .
     # SSH. Published as a host TCP port so you can `ssh -p 2222 dev@<server>`.
-    # Open 2222 in your cloud firewall. (Coolify's domain below is HTTP-only, for the
-    # dev-server preview — it does not carry SSH.)
+    # Open the port in your cloud firewall. (Coolify's domain below is HTTP-only, for
+    # the dev-server preview — it does not carry SSH.) Running SEVERAL devboxes on one
+    # server? Give each app a different DEVBOX_SSH_PORT (2222, 2223, ...) in its env.
     ports:
-      - "2222:22"
+      - "${DEVBOX_SSH_PORT:-2222}:22"
     environment:
       # --- Public dev-server preview (optional) --------------------------------
       # Coolify sees this magic var and generates a public HTTPS domain for port
