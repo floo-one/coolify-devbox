@@ -31,33 +31,40 @@ chown dev:dev /home/dev
   printf 'export DEVBOX_PROJECT=%q\n'  "${DEVBOX_PROJECT:-}"
   printf 'export DEVBOX_DEV_CMD=%q\n'  "${DEVBOX_DEV_CMD:-}"
   printf 'export DEVBOX_DEV_PORT=%q\n' "${DEVBOX_DEV_PORT:-3000}"
-  # The box's public dev URL (Coolify magic vars), so dev servers can trust/use
-  # their own public origin (CORS, auth trusted-origins, absolute URLs, ...).
-  printf 'export DEVBOX_URL=%q\n'      "${SERVICE_URL_DEVBOX:-}"
-  printf 'export DEVBOX_FQDN=%q\n'     "${SERVICE_FQDN_DEVBOX:-}"
+  # The box's public dev URL (plain env var, matches the Domains field), so dev
+  # servers can trust/use their own public origin (CORS, auth trusted-origins,
+  # absolute URLs, ...). FQDN = URL minus scheme.
+  printf 'export DEVBOX_URL=%q\n'      "${DEVBOX_URL:-}"
+  printf 'export DEVBOX_FQDN=%q\n'     "$(printf '%s' "${DEVBOX_URL:-}" | sed -E 's#^[a-z]+://##; s#/.*$##')"
 } > /etc/profile.d/00-devbox-env.sh
 
 # Public dev-server preview: Caddy fronts container port 9009 -> the dev port.
-# Auth: gated by basic auth when SERVICE_PASSWORD_DEVBOX is set (Coolify generates
-# it; hashed here at runtime, so no secret ever lives in git) — UNLESS
-# DEVBOX_PUBLIC=true, which serves the URL with NO auth (anyone with the URL sees
-# your dev server). Caddy returns 502 until something listens on the dev port.
-# Never let a proxy problem abort sshd — run the whole block tolerant of failure.
+# Auth: set DEVBOX_AUTH="user:password" to gate the URL with basic auth (hashed
+# here at runtime, so no secret ever lives in git); leave it EMPTY to serve the
+# URL public. A malformed value (no colon) disables the URL entirely — fail
+# closed, never accidentally public. Caddy returns 502 until something listens
+# on the dev port. Never let a proxy problem abort sshd — tolerate failure.
 ( set +e
   DEV_PORT="${DEVBOX_DEV_PORT:-3000}"
-  AUTH_HASH=""
-  if [ "${DEVBOX_PUBLIC:-}" != "true" ] && [ -n "${SERVICE_PASSWORD_DEVBOX:-}" ]; then
-    # --plaintext is required: stdin-piping errors with "EOF" (hash-password wants
-    # an interactive confirm when reading from stdin). Verified on caddy 2.x.
-    AUTH_HASH="$(caddy hash-password --plaintext "$SERVICE_PASSWORD_DEVBOX")"
-    [ -n "$AUTH_HASH" ] || { echo "hash-password produced nothing"; exit 1; }
+  AUTH_USER="" AUTH_HASH=""
+  if [ -n "${DEVBOX_AUTH:-}" ]; then
+    case "$DEVBOX_AUTH" in
+      *:*)
+        AUTH_USER="${DEVBOX_AUTH%%:*}"
+        # --plaintext is required: stdin-piping errors with "EOF" (hash-password
+        # wants an interactive confirm when reading from stdin). Verified caddy 2.x.
+        AUTH_HASH="$(caddy hash-password --plaintext "${DEVBOX_AUTH#*:}")"
+        [ -n "$AUTH_USER" ] && [ -n "$AUTH_HASH" ] || { echo "DEVBOX_AUTH: hashing failed"; exit 1; }
+        ;;
+      *) echo "DEVBOX_AUTH must be user:password — refusing to serve the dev URL"; exit 1;;
+    esac
   fi
   mkdir -p /etc/caddy
   # printf (not a heredoc) so the '$' in the bcrypt hash is written literally.
   {
     printf '{\n\tadmin off\n\tauto_https off\n}\n:9009 {\n'
     if [ -n "$AUTH_HASH" ]; then
-      printf '\tbasic_auth {\n\t\t%s %s\n\t}\n' "${SERVICE_USER_DEVBOX:-dev}" "$AUTH_HASH"
+      printf '\tbasic_auth {\n\t\t%s %s\n\t}\n' "$AUTH_USER" "$AUTH_HASH"
     fi
     printf '\treverse_proxy 127.0.0.1:%s\n}\n' "$DEV_PORT"
   } > /etc/caddy/Caddyfile

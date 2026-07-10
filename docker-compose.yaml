@@ -15,26 +15,20 @@ services:
       - "${DEVBOX_SSH_PORT:-2222}:22"
     environment:
       # --- Public dev-server preview (optional) --------------------------------
-      # Coolify sees this magic var and generates a public HTTPS domain for port
-      # 9009. NOTE (Coolify 4.1.x, git-based compose apps): the domain lands in the
-      # SERVICE_FQDN_DEVBOX env var but is NOT always registered with the proxy —
-      # if the URL doesn't route after the first deploy, set the app's Domains
-      # field for service "devbox" to  https://<that-domain>:9009  (port included,
-      # so Traefik picks 9009 over the also-exposed port 22) and redeploy.
-      # Delete this line if you only ever preview via `ssh -L` port-forward.
-      - SERVICE_FQDN_DEVBOX_9009
-      # Basic-auth for that public URL. Coolify auto-generates the password (shown
-      # in the app's env vars, never committed here) and the entrypoint turns it into
-      # an in-container Caddy basic-auth gate. User defaults to "dev". Rotate the URL
-      # password by regenerating SERVICE_PASSWORD_DEVBOX in Coolify + restart.
-      # NOTE: the ${...} reference form is required — Coolify only auto-generates
-      # SERVICE_USER_*/SERVICE_PASSWORD_* for interpolated references; a bare name
-      # (which works for SERVICE_FQDN_*) is silently left empty.
-      - SERVICE_USER_DEVBOX=${SERVICE_USER_DEVBOX}
-      - SERVICE_PASSWORD_DEVBOX=${SERVICE_PASSWORD_DEVBOX}
-      # Set to "true" to serve the dev URL with NO auth (anyone with the URL can
-      # see whatever runs on the dev port). Default: auth on.
-      - DEVBOX_PUBLIC=${DEVBOX_PUBLIC:-}
+      # No Coolify SERVICE_* magic vars here ON PURPOSE: they are built for one-click
+      # service templates and misbehave on git-based compose apps (domain churn plus
+      # a phantom "configuration changed — redeploy required" diff on every deploy).
+      # The reliable path is boring:
+      #   1. Set the app's Domains field ONCE to  https://<your-domain>:9009
+      #      (the :9009 tells Traefik which container port to route — the container
+      #      also exposes 22, so it can't infer it. Visitors never see the port.)
+      #   2. Mirror the URL here so shells and dev servers know their public origin
+      #      (exported as DEVBOX_URL / DEVBOX_FQDN in every SSH session):
+      - DEVBOX_URL=${DEVBOX_URL:-}
+      # Basic-auth for the public URL: set "user:password" to protect it; leave
+      # EMPTY to serve it public (anyone with the URL sees your dev server).
+      # Hashed at runtime by the entrypoint — no hash to maintain, no secret in git.
+      - DEVBOX_AUTH=${DEVBOX_AUTH:-}
       # Which internal port your dev server listens on (Caddy proxies 9009 -> here).
       - DEVBOX_DEV_PORT=${DEVBOX_DEV_PORT:-3000}
 
@@ -48,7 +42,7 @@ services:
       - DEVBOX_PROJECT=${DEVBOX_PROJECT:-}
       # If set, the dev tab auto-runs this on a cold start, e.g. "pnpm dev".
       - DEVBOX_DEV_CMD=${DEVBOX_DEV_CMD:-}
-    # Documents the dev-server port for Coolify's SERVICE_FQDN routing.
+    # The Caddy preview port Traefik routes the domain to (see Domains note above).
     expose:
       - "9009"
     volumes:
